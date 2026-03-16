@@ -1,9 +1,13 @@
 import { useState } from "react";
-import { Search, Play, Plus, Loader2 } from "lucide-react";
+import { Search, Play, Plus, Loader2, Download, Pause, MoreHorizontal } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { searchTracks, Track, formatDuration } from "@/lib/api";
+import { searchTracks, Track, formatDuration, getDownloadUrl } from "@/lib/api";
 import { usePlayer } from "@/contexts/PlayerContext";
 import { toast } from "sonner";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface SearchViewProps {
   onAddToPlaylist?: (track: Track) => void;
@@ -13,7 +17,7 @@ export default function SearchView({ onAddToPlaylist }: SearchViewProps) {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<Track[]>([]);
   const [loading, setLoading] = useState(false);
-  const { playTrack } = usePlayer();
+  const { playTrack, currentTrack, isPlaying, togglePlay } = usePlayer();
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -30,69 +34,157 @@ export default function SearchView({ onAddToPlaylist }: SearchViewProps) {
     }
   };
 
+  const handleDownload = (track: Track) => {
+    const a = document.createElement("a");
+    a.href = getDownloadUrl(track.url, track.title);
+    a.download = `${track.title}.mp3`;
+    a.click();
+    toast.success(`Baixando "${track.title}"...`);
+  };
+
+  const isCurrentlyPlaying = (track: Track) =>
+    currentTrack?.id === track.id && isPlaying;
+
   return (
-    <div className="flex-1 overflow-y-auto scrollbar-thin p-6">
-      <h1 className="text-2xl font-bold mb-6 text-foreground">Buscar</h1>
-      <form onSubmit={handleSearch} className="relative max-w-xl mb-8">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input
-          value={query}
-          onChange={e => setQuery(e.target.value)}
-          placeholder="Buscar músicas, artistas..."
-          className="pl-10 bg-card border-border"
-        />
-      </form>
+    <div className="flex-1 overflow-y-auto scrollbar-thin">
+      <div className="p-6 pb-4">
+        <motion.h1
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="text-3xl font-bold mb-6 text-foreground"
+        >
+          Buscar
+        </motion.h1>
+
+        <form onSubmit={handleSearch} className="relative max-w-2xl mb-8">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+          <Input
+            value={query}
+            onChange={e => setQuery(e.target.value)}
+            placeholder="O que você quer ouvir?"
+            className="pl-12 pr-4 h-12 text-base bg-muted/50 border-border/50 rounded-2xl focus:ring-2 focus:ring-primary/30 focus:bg-muted/70 transition-all"
+          />
+        </form>
+      </div>
 
       {loading && (
-        <div className="flex justify-center py-12">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <div className="flex flex-col items-center justify-center py-16">
+          <Loader2 className="h-10 w-10 animate-spin text-primary mb-3" />
+          <p className="text-sm text-muted-foreground">Buscando músicas...</p>
         </div>
       )}
 
-      {!loading && results.length > 0 && (
-        <div className="space-y-1">
-          {results.map((track, i) => (
-            <div
-              key={track.id}
-              className="flex items-center gap-3 rounded-lg p-3 glass-hover transition-colors group cursor-pointer"
-              onClick={() => playTrack(track, results)}
-            >
-              <span className="w-6 text-center text-sm text-muted-foreground group-hover:hidden">
-                {i + 1}
-              </span>
-              <Play className="w-6 h-4 text-foreground hidden group-hover:block" />
-              <img
-                src={track.thumbnail}
-                alt={track.title}
-                className="h-10 w-10 rounded object-cover flex-shrink-0"
-              />
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium truncate text-foreground">{track.title}</p>
-                <p className="text-xs text-muted-foreground truncate">{track.artist}</p>
-              </div>
-              <span className="text-xs text-muted-foreground tabular-nums">
-                {formatDuration(track.duration)}
-              </span>
-              {onAddToPlaylist && (
-                <button
-                  onClick={e => { e.stopPropagation(); onAddToPlaylist(track); }}
-                  className="p-2 rounded-full text-muted-foreground hover:text-primary hover:bg-muted transition-colors opacity-0 group-hover:opacity-100"
-                  title="Adicionar à playlist"
-                >
-                  <Plus className="h-4 w-4" />
-                </button>
-              )}
+      <AnimatePresence mode="wait">
+        {!loading && results.length > 0 && (
+          <motion.div
+            key="results"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="px-6 pb-28"
+          >
+            <p className="text-sm text-muted-foreground mb-4">
+              {results.length} resultado{results.length !== 1 ? "s" : ""} encontrado{results.length !== 1 ? "s" : ""}
+            </p>
+            <div className="space-y-1">
+              {results.map((track, i) => {
+                const playing = isCurrentlyPlaying(track);
+                return (
+                  <motion.div
+                    key={track.id}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: i * 0.05 }}
+                    className={`flex items-center gap-3 rounded-xl p-3 transition-all duration-200 group cursor-pointer ${
+                      playing ? "bg-primary/10" : "hover:bg-muted/50"
+                    }`}
+                    onClick={() => {
+                      if (playing) togglePlay();
+                      else playTrack(track, results);
+                    }}
+                  >
+                    {/* Number / Play indicator */}
+                    <div className="w-8 flex items-center justify-center flex-shrink-0">
+                      {playing ? (
+                        <div className="flex items-end gap-[2px] h-4">
+                          <div className="equalizer-bar" />
+                          <div className="equalizer-bar" />
+                          <div className="equalizer-bar" />
+                        </div>
+                      ) : (
+                        <>
+                          <span className="text-sm text-muted-foreground group-hover:hidden tabular-nums">
+                            {i + 1}
+                          </span>
+                          <Play className="h-4 w-4 text-foreground hidden group-hover:block" />
+                        </>
+                      )}
+                    </div>
+
+                    {/* Thumbnail */}
+                    <img
+                      src={track.thumbnail}
+                      alt={track.title}
+                      className="h-12 w-12 rounded-lg object-cover flex-shrink-0 shadow-lg"
+                    />
+
+                    {/* Info */}
+                    <div className="flex-1 min-w-0">
+                      <p className={`text-sm font-semibold truncate ${playing ? "text-primary" : "text-foreground"}`}>
+                        {track.title}
+                      </p>
+                      <p className="text-xs text-muted-foreground truncate mt-0.5">{track.artist}</p>
+                    </div>
+
+                    {/* Duration */}
+                    <span className="text-xs text-muted-foreground tabular-nums mr-1">
+                      {formatDuration(track.duration)}
+                    </span>
+
+                    {/* Actions */}
+                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      {onAddToPlaylist && (
+                        <button
+                          onClick={e => { e.stopPropagation(); onAddToPlaylist(track); }}
+                          className="p-2 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/10 transition-all"
+                          title="Adicionar à playlist"
+                        >
+                          <Plus className="h-4 w-4" />
+                        </button>
+                      )}
+                      <button
+                        onClick={e => { e.stopPropagation(); handleDownload(track); }}
+                        className="p-2 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/10 transition-all"
+                        title="Baixar música"
+                      >
+                        <Download className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </motion.div>
+                );
+              })}
             </div>
-          ))}
-        </div>
-      )}
+          </motion.div>
+        )}
 
-      {!loading && results.length === 0 && !query && (
-        <div className="flex flex-col items-center justify-center py-20 text-muted-foreground">
-          <Search className="h-16 w-16 mb-4 opacity-30" />
-          <p className="text-lg">Pesquise por músicas ou artistas</p>
-        </div>
-      )}
+        {!loading && results.length === 0 && !query && (
+          <motion.div
+            key="empty"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="flex flex-col items-center justify-center py-20 text-muted-foreground"
+          >
+            <div className="relative mb-6">
+              <div className="absolute inset-0 bg-primary/10 rounded-full blur-2xl scale-150" />
+              <div className="relative flex h-24 w-24 items-center justify-center rounded-full bg-muted/50">
+                <Search className="h-10 w-10 text-muted-foreground/50" />
+              </div>
+            </div>
+            <p className="text-xl font-semibold text-foreground mb-1">Explore milhares de músicas</p>
+            <p className="text-sm">Pesquise por músicas, artistas ou álbuns</p>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

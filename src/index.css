@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -6,48 +6,50 @@
 
 @layer base {
   :root {
-    --background: 220 16% 6%;
-    --foreground: 0 0% 95%;
+    --background: 225 20% 5%;
+    --foreground: 0 0% 96%;
 
-    --card: 220 14% 10%;
-    --card-foreground: 0 0% 95%;
+    --card: 225 18% 9%;
+    --card-foreground: 0 0% 96%;
 
-    --popover: 220 14% 10%;
-    --popover-foreground: 0 0% 95%;
+    --popover: 225 18% 9%;
+    --popover-foreground: 0 0% 96%;
 
-    --primary: 152 69% 45%;
-    --primary-foreground: 220 16% 6%;
+    --primary: 145 72% 42%;
+    --primary-glow: 160 80% 55%;
+    --primary-foreground: 225 20% 5%;
 
-    --secondary: 220 14% 14%;
-    --secondary-foreground: 0 0% 80%;
+    --secondary: 225 16% 13%;
+    --secondary-foreground: 0 0% 78%;
 
-    --muted: 220 12% 16%;
-    --muted-foreground: 220 10% 55%;
+    --muted: 225 14% 15%;
+    --muted-foreground: 225 10% 50%;
 
-    --accent: 152 69% 45%;
-    --accent-foreground: 220 16% 6%;
+    --accent: 145 72% 42%;
+    --accent-foreground: 225 20% 5%;
 
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 98%;
 
-    --border: 220 12% 18%;
-    --input: 220 12% 18%;
-    --ring: 152 69% 45%;
+    --border: 225 14% 14%;
+    --input: 225 14% 14%;
+    --ring: 145 72% 42%;
 
     --radius: 0.75rem;
 
-    --player-bg: 220 16% 8%;
-    --surface-glass: 220 14% 12%;
-    --surface-hover: 220 14% 16%;
+    --player-bg: 225 22% 6%;
+    --surface-glass: 225 16% 10%;
+    --surface-hover: 225 16% 14%;
+    --surface-elevated: 225 18% 12%;
 
-    --sidebar-background: 220 16% 8%;
-    --sidebar-foreground: 0 0% 80%;
-    --sidebar-primary: 152 69% 45%;
-    --sidebar-primary-foreground: 220 16% 6%;
-    --sidebar-accent: 220 14% 14%;
-    --sidebar-accent-foreground: 0 0% 95%;
-    --sidebar-border: 220 12% 18%;
-    --sidebar-ring: 152 69% 45%;
+    --sidebar-background: 225 22% 6%;
+    --sidebar-foreground: 0 0% 78%;
+    --sidebar-primary: 145 72% 42%;
+    --sidebar-primary-foreground: 225 20% 5%;
+    --sidebar-accent: 225 16% 13%;
+    --sidebar-accent-foreground: 0 0% 96%;
+    --sidebar-border: 225 14% 12%;
+    --sidebar-ring: 145 72% 42%;
   }
 }
 
@@ -57,14 +59,23 @@
   }
 
   body {
-    @apply bg-background text-foreground font-sans antialiased;
-    font-family: 'Inter', sans-serif;
+    @apply bg-background text-foreground antialiased;
+    font-family: 'Plus Jakarta Sans', 'Inter', sans-serif;
   }
 }
 
 @layer utilities {
   .glass {
-    @apply bg-[hsl(var(--surface-glass))] backdrop-blur-xl;
+    background: hsl(var(--surface-glass) / 0.7);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+  }
+
+  .glass-card {
+    background: hsl(var(--surface-glass) / 0.5);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid hsl(var(--border) / 0.5);
   }
 
   .glass-hover {
@@ -72,16 +83,25 @@
   }
 
   .text-gradient {
-    @apply bg-gradient-to-r from-[hsl(var(--primary))] to-[hsl(152,90%,60%)] bg-clip-text text-transparent;
+    @apply bg-clip-text text-transparent;
+    background-image: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary-glow)));
+  }
+
+  .glow-primary {
+    box-shadow: 0 0 20px hsl(var(--primary) / 0.3), 0 0 60px hsl(var(--primary) / 0.1);
+  }
+
+  .glow-primary-sm {
+    box-shadow: 0 0 10px hsl(var(--primary) / 0.2);
   }
 
   .scrollbar-thin {
     scrollbar-width: thin;
-    scrollbar-color: hsl(var(--muted)) transparent;
+    scrollbar-color: hsl(var(--muted) / 0.5) transparent;
   }
 
   .scrollbar-thin::-webkit-scrollbar {
-    width: 6px;
+    width: 5px;
   }
 
   .scrollbar-thin::-webkit-scrollbar-track {
@@ -89,8 +109,26 @@
   }
 
   .scrollbar-thin::-webkit-scrollbar-thumb {
+    background: hsl(var(--muted) / 0.5);
+    border-radius: 10px;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb:hover {
     background: hsl(var(--muted));
-    border-radius: 3px;
+  }
+
+  .line-clamp-1 {
+    display: -webkit-box;
+    -webkit-line-clamp: 1;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .line-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
   }
 }
 
@@ -110,17 +148,19 @@ input[type="range"]::-webkit-slider-runnable-track {
 
 input[type="range"]::-webkit-slider-thumb {
   -webkit-appearance: none;
-  height: 12px;
-  width: 12px;
+  height: 14px;
+  width: 14px;
   border-radius: 50%;
   background: hsl(var(--primary));
-  margin-top: -4px;
+  margin-top: -5px;
   opacity: 0;
-  transition: opacity 0.15s;
+  transition: opacity 0.15s, transform 0.15s;
+  box-shadow: 0 0 6px hsl(var(--primary) / 0.4);
 }
 
 input[type="range"]:hover::-webkit-slider-thumb {
   opacity: 1;
+  transform: scale(1.1);
 }
 
 input[type="range"]::-moz-range-track {
@@ -130,9 +170,44 @@ input[type="range"]::-moz-range-track {
 }
 
 input[type="range"]::-moz-range-thumb {
-  height: 12px;
-  width: 12px;
+  height: 14px;
+  width: 14px;
   border-radius: 50%;
   background: hsl(var(--primary));
   border: none;
+  box-shadow: 0 0 6px hsl(var(--primary) / 0.4);
 }
+
+/* Spinning animation for currently playing track thumbnail */
+@keyframes spin-slow {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.animate-spin-slow {
+  animation: spin-slow 8s linear infinite;
+}
+
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 15px hsl(var(--primary) / 0.2); }
+  50% { box-shadow: 0 0 25px hsl(var(--primary) / 0.4); }
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+@keyframes equalizer {
+  0%, 100% { height: 3px; }
+  50% { height: 14px; }
+}
+
+.equalizer-bar {
+  width: 3px;
+  border-radius: 2px;
+  background: hsl(var(--primary));
+  animation: equalizer 0.8s ease-in-out infinite;
+}
+
+.equalizer-bar:nth-child(2) { animation-delay: 0.2s; }
+.equalizer-bar:nth-child(3) { animation-delay: 0.4s; }
