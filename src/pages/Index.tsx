@@ -1,10 +1,13 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import Sidebar from "@/components/Sidebar";
 import SearchView from "@/components/SearchView";
 import PlaylistView from "@/components/PlaylistView";
 import PlayerBar from "@/components/PlayerBar";
+import HomeView from "@/components/HomeView";
+import HistoryView from "@/components/HistoryView";
 import { usePlaylistStore } from "@/hooks/usePlaylistStore";
-import { PlayerProvider } from "@/contexts/PlayerContext";
+import { PlayerProvider, usePlayer } from "@/contexts/PlayerContext";
+import { useListeningHistory } from "@/hooks/useListeningHistory";
 import { Track } from "@/lib/api";
 import { toast } from "sonner";
 import {
@@ -12,10 +15,19 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 
-export default function Index() {
-  const [activeView, setActiveView] = useState("search");
+function AppContent() {
+  const [activeView, setActiveView] = useState("home");
   const { playlists, createPlaylist, deletePlaylist, addTrackToPlaylist, removeTrackFromPlaylist } = usePlaylistStore();
   const [addToPlaylistTrack, setAddToPlaylistTrack] = useState<Track | null>(null);
+  const { addToHistory } = useListeningHistory();
+  const { currentTrack } = usePlayer();
+
+  // Track listening history
+  useEffect(() => {
+    if (currentTrack) {
+      addToHistory(currentTrack);
+    }
+  }, [currentTrack?.id]);
 
   const activePlaylist = useMemo(() => {
     if (!activeView.startsWith("playlist:")) return null;
@@ -35,59 +47,71 @@ export default function Index() {
   };
 
   return (
+    <div className="flex h-screen bg-background overflow-hidden">
+      <Sidebar
+        playlists={playlists.map(p => ({ id: p.id, name: p.name }))}
+        activeView={activeView}
+        onViewChange={setActiveView}
+        onCreatePlaylist={createPlaylist}
+      />
+
+      <main className="flex-1 flex flex-col min-w-0">
+        {activeView === "home" && (
+          <HomeView onNavigate={setActiveView} />
+        )}
+        {activeView === "search" && (
+          <SearchView onAddToPlaylist={handleAddToPlaylist} />
+        )}
+        {activeView === "history" && (
+          <HistoryView />
+        )}
+        {activePlaylist && (
+          <PlaylistView
+            playlist={activePlaylist}
+            onRemoveTrack={trackId => removeTrackFromPlaylist(activePlaylist.id, trackId)}
+            onDeletePlaylist={() => {
+              deletePlaylist(activePlaylist.id);
+              setActiveView("home");
+            }}
+          />
+        )}
+      </main>
+
+      <PlayerBar />
+
+      {/* Select playlist dialog */}
+      <Dialog open={!!addToPlaylistTrack} onOpenChange={() => setAddToPlaylistTrack(null)}>
+        <DialogContent className="bg-card border-border/50 rounded-2xl">
+          <DialogHeader>
+            <DialogTitle className="text-foreground">Adicionar à playlist</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-1 mt-2">
+            {playlists.map(pl => (
+              <Button
+                key={pl.id}
+                variant="ghost"
+                className="w-full justify-start rounded-xl hover:bg-primary/10 hover:text-primary"
+                onClick={() => {
+                  if (addToPlaylistTrack) {
+                    addTrackToPlaylist(pl.id, addToPlaylistTrack);
+                    setAddToPlaylistTrack(null);
+                  }
+                }}
+              >
+                {pl.name}
+              </Button>
+            ))}
+          </div>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
+
+export default function Index() {
+  return (
     <PlayerProvider>
-      <div className="flex h-screen bg-background overflow-hidden">
-        <Sidebar
-          playlists={playlists.map(p => ({ id: p.id, name: p.name }))}
-          activeView={activeView}
-          onViewChange={setActiveView}
-          onCreatePlaylist={createPlaylist}
-        />
-
-        <main className="flex-1 flex flex-col min-w-0">
-          {activeView === "search" && (
-            <SearchView onAddToPlaylist={handleAddToPlaylist} />
-          )}
-          {activePlaylist && (
-            <PlaylistView
-              playlist={activePlaylist}
-              onRemoveTrack={trackId => removeTrackFromPlaylist(activePlaylist.id, trackId)}
-              onDeletePlaylist={() => {
-                deletePlaylist(activePlaylist.id);
-                setActiveView("search");
-              }}
-            />
-          )}
-        </main>
-
-        <PlayerBar />
-
-        {/* Select playlist dialog */}
-        <Dialog open={!!addToPlaylistTrack} onOpenChange={() => setAddToPlaylistTrack(null)}>
-          <DialogContent className="bg-card border-border">
-            <DialogHeader>
-              <DialogTitle className="text-foreground">Adicionar à playlist</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-2 mt-2">
-              {playlists.map(pl => (
-                <Button
-                  key={pl.id}
-                  variant="ghost"
-                  className="w-full justify-start"
-                  onClick={() => {
-                    if (addToPlaylistTrack) {
-                      addTrackToPlaylist(pl.id, addToPlaylistTrack);
-                      setAddToPlaylistTrack(null);
-                    }
-                  }}
-                >
-                  {pl.name}
-                </Button>
-              ))}
-            </div>
-          </DialogContent>
-        </Dialog>
-      </div>
+      <AppContent />
     </PlayerProvider>
   );
 }
