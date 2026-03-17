@@ -167,11 +167,12 @@ export function usePlaylistStore() {
   }, [playlists]);
 
   const fetchSharedPlaylist = useCallback(async (shareId: string): Promise<Playlist | null> => {
+    // Use raw filter to avoid deep type instantiation issues
     const { data: pls, error } = await supabase
       .from("playlists")
       .select("*")
-      .eq("share_id" as any, shareId)
-      .in("visibility" as any, ["link", "public"]);
+      .or(`visibility.eq.link,visibility.eq.public`)
+      .filter("share_id", "eq", shareId);
 
     if (error || !pls || pls.length === 0) return null;
     const pl = pls[0];
